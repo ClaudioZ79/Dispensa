@@ -328,10 +328,6 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
       cb.addEventListener('change', () => toggleSpesa(s.id, cb.checked));
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = s.nome;
       lab.append(cb, nm);
-      if (s.auto) {
-        const b = document.createElement('span'); b.className = 'badge ' + (s.auto === 'da-buttare' ? 'trash' : 'ok');
-        b.textContent = s.auto === 'da-buttare' ? 'Ultimo pezzo · da buttare' : 'Ultimo pezzo · in scadenza'; lab.appendChild(b);
-      }
       if (s.tipo) { const tp = document.createElement('span'); tp.className = 'tp'; tp.textContent = s.tipo; lab.appendChild(tp); }
       const del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = 'Togli';
       del.setAttribute('aria-label', 'Togli dalla lista: ' + s.nome);
