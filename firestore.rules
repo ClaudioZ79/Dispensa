@@ -1,0 +1,22 @@
+rules_version = '2';
+
+// Regole per il database condiviso. Chi ha il link dell'app può leggere e modificare
+// alimenti e lista della spesa: adatto a una cerchia di persone fidate, non a dati sensibili.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /cibi/{id} {
+      allow read: if true;
+      allow create, update: if request.resource.data.nome is string
+        && request.resource.data.nome.size() > 0
+        && request.resource.data.nome.size() <= 80;
+      allow delete: if true;
+    }
+    match /spesa/{id} {
+      allow read: if true;
+      allow create, update: if request.resource.data.nome is string
+        && request.resource.data.nome.size() > 0
+        && request.resource.data.nome.size() <= 80;
+      allow delete: if true;
+    }
+  }
+}

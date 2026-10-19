@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Importa dati</title>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 560px; margin: 40px auto; padding: 0 20px; line-height: 1.5; }
+  button { font: inherit; padding: 10px 16px; border-radius: 7px; border: 0; background: #1f6f78; color: #fff; font-weight: 700; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: progress; }
+  #log { white-space: pre-wrap; margin-top: 16px; }
+</style>
+</head>
+<body>
+<h1>Importa dati da Claude</h1>
+<p>Questa pagina copia alimenti e lista della spesa dal file <code>migrazione/dati-claude.json</code> nel database Firebase. Va usata una sola volta, dopo aver configurato <code>firebase-config.js</code>. Se rilanci, i documenti con lo stesso ID vengono sovrascritti, non duplicati.</p>
+<button id="go">Importa ora</button>
+<div id="log"></div>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+(async () => {
+  const log = m => { document.getElementById('log').textContent += m + '\n'; };
+  const btn = document.getElementById('go');
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      if (!window.FIREBASE_CONFIG) throw new Error('firebase-config.js non è configurato.');
+      if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+      const db = firebase.firestore();
+      const dati = await fetch('migrazione/dati-claude.json').then(r => r.json());
+      const batch = db.batch();
+      dati.cibi.forEach(d => batch.set(db.collection('cibi').doc(d.id), d.data));
+      dati.spesa.forEach(d => batch.set(db.collection('spesa').doc(d.id), d.data));
+      await batch.commit();
+      log('Importati ' + dati.cibi.length + ' alimenti e ' + dati.spesa.length + ' voci della spesa.');
+    } catch (e) {
+      log('Errore: ' + e.message);
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
