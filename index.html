@@ -143,6 +143,14 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
 .btn, .toast button { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 </style>
 
+<div id="accesso" hidden>
+  <section class="col" style="max-width:420px;margin:60px auto;padding:24px;display:grid;gap:16px;text-align:center">
+    <h2 style="margin:0;font-family:var(--f-display);font-size:26px">Scadenze Dispensa</h2>
+    <p class="note" style="margin:0">Accedi con l'account Google autorizzato per vedere e modificare la dispensa.</p>
+    <button class="btn" id="btn-accedi" type="button">Accedi con Google</button>
+    <p class="note" id="accesso-msg" style="margin:0;color:var(--bad)"></p>
+  </section>
+</div>
 <div class="wrap">
   <section class="today" aria-label="Data di oggi">
     <div class="date">
@@ -154,6 +162,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     </div>
     <div style="display:grid;gap:8px;justify-items:end">
       <div class="clock" id="clock"></div>
+      <button class="btn ghost" id="btn-esci" type="button" hidden>Esci</button>
       <div class="summary" id="summary"></div>
     </div>
   </section>
@@ -209,6 +218,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
 
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-app-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-auth-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
 (() => {
@@ -632,30 +642,57 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
   (async () => {
     // Dentro Claude usa il database di Claude; fuori usa Firebase (se configurato); altrimenti salva solo nel browser
     let db = window.claude && window.claude.use ? await window.claude.use('db') : null;
+    // Collega le liste del database e le ascolta in tempo reale
+    function avviaDati(db) {
+      store = db.collection('cibi');
+      sstore = db.collection('spesa');
+      store.onSnapshot(snap => {
+        items = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        loaded = true; status('');
+        if (!snap.metadata.fromCache) itemsReady = true;
+        render(); syncAuto();
+      }, () => { status('Connessione persa. Ricarica la pagina per vedere gli aggiornamenti.'); });
+      sstore.onSnapshot(snap => {
+        spesa = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        if (!snap.metadata.fromCache) spesaReady = true;
+        renderSpesa(); syncAuto();
+      }, () => { status('Connessione persa. Ricarica la pagina per vedere gli aggiornamenti.'); });
+    }
+    // Schermata di accesso: visibile finché non entra una persona autorizzata
+    function mostraAccesso(msg) {
+      $('accesso').hidden = false; document.querySelector('.wrap').style.display = 'none';
+      $('accesso-msg').textContent = msg || ''; $('btn-esci').hidden = true;
+    }
+    function nascondiAccesso(email) {
+      $('accesso').hidden = true; document.querySelector('.wrap').style.display = '';
+      $('btn-esci').hidden = false; $('btn-esci').title = 'Esci (' + email + ')';
+    }
+
     if (!db && window.FIREBASE_CONFIG && window.firebase) {
       try {
         if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
-        db = firebase.firestore();
-      } catch (e) { db = null; }
+        const auth = firebase.auth();
+        const provider = new firebase.auth.GoogleAuthProvider();
+        $('btn-accedi').addEventListener('click', () => auth.signInWithPopup(provider).catch(e => { $('accesso-msg').textContent = 'Accesso non riuscito: ' + e.message; }));
+        $('btn-esci').addEventListener('click', () => auth.signOut());
+        auth.onAuthStateChanged(user => {
+          if (!user) { mostraAccesso(''); return; }
+          if (!(window.EMAIL_AUTORIZZATE || []).includes(user.email)) {
+            mostraAccesso('Questo account non è autorizzato. Accedi con quello della dispensa.');
+            auth.signOut(); return;
+          }
+          nascondiAccesso(user.email);
+          if (!store) avviaDati(firebase.firestore());
+        });
+      } catch (e) { mostraAccesso('Accesso non disponibile in questo momento.'); }
+      return;
     }
     if (!db) {
       loadLocal(); loaded = true; itemsReady = true; spesaReady = true; render();
       status('Database non collegato: i dati restano salvati solo in questo browser. Vedi README.md.');
       return;
     }
-    store = db.collection('cibi');
-    sstore = db.collection('spesa');
-    store.onSnapshot(snap => {
-      items = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
-      loaded = true; status('');
-      if (!snap.metadata.fromCache) itemsReady = true;
-      render(); syncAuto();
-    }, () => { status('Connessione persa. Ricarica la pagina per vedere gli aggiornamenti.'); });
-    sstore.onSnapshot(snap => {
-      spesa = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
-      if (!snap.metadata.fromCache) spesaReady = true;
-      renderSpesa(); syncAuto();
-    }, () => { status('Connessione persa. Ricarica la pagina per vedere gli aggiornamenti.'); });
+    avviaDati(db);
   })();
 })();
 </script>
