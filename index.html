@@ -125,6 +125,15 @@ li.sitem { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; paddi
 .toast button { background: transparent; border: 1.5px solid currentColor; color: inherit; border-radius: 7px; padding: 4px 10px; font-weight: 700; cursor: pointer; }
 @media (prefers-reduced-motion: no-preference) { li.item { transition: background .15s; } li.item:hover { background: var(--bg); } }
 
+/* Schede, zone (Frigo / Congelatore) */
+.tabs { display: flex; gap: 8px; }
+.tab { flex: 1; background: var(--glass); border: 1px solid var(--glass-edge); color: var(--muted); border-radius: 999px; padding: 10px 14px; font-weight: 700; cursor: pointer; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.tab.on { color: var(--ink); background: var(--panel); box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.tabcount { font-family: var(--f-mono); font-size: 12px; margin-left: 4px; }
+.panel { display: grid; gap: 24px; }
+.panel[hidden] { display: none; }
+.zona { margin: 0; font-family: var(--f-display); font-size: 22px; }
+
 /* Effetto vetro (stile Liquid Glass): sfondo sfumato, pannelli semitrasparenti e sfocati */
 :root { --glass: rgba(255,255,255,.55); --glass-edge: rgba(255,255,255,.75); --glass-bg: linear-gradient(160deg, #dbe9ee 0%, #eef2f3 45%, #f6e7dc 100%); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
@@ -167,6 +176,12 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     </div>
   </section>
 
+  <nav class="tabs" role="tablist" aria-label="Sezioni">
+    <button class="tab on" type="button" role="tab" data-tab="dispensa" aria-selected="true">Dispensa</button>
+    <button class="tab" type="button" role="tab" data-tab="spesa" aria-selected="false">Lista della spesa <span class="tabcount" id="tab-n">0</span></button>
+  </nav>
+
+  <div class="panel" id="pan-dispensa">
   <form class="add" id="add" autocomplete="off">
     <button class="btn ghost" type="button" id="f-foto-btn" hidden>Scatta foto</button>
     <input id="f-foto" type="file" accept="image/*" capture="environment" hidden>
@@ -174,7 +189,8 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     <div class="field grow"><label for="f-nome">Alimento</label><input id="f-nome" required maxlength="80" placeholder="es. Yogurt greco"></div>
     <div class="field" style="flex:0 1 90px"><label for="f-qta">Quantità</label><input id="f-qta" type="number" inputmode="decimal" min="0" step="any" value="1"></div>
     <div class="field" style="flex:0 1 90px"><label for="f-unita">Unità</label><select id="f-unita"><option>pz</option><option>g</option><option>kg</option><option>ml</option><option>L</option></select></div>
-    <div class="field" style="flex:0 1 170px"><label for="f-data">Scadenza</label><input id="f-data" type="date" required></div>
+    <div class="field" style="flex:0 1 150px"><label for="f-posto">Dove</label><select id="f-posto"><option value="frigo">Frigo</option><option value="congelatore">Congelatore</option></select></div>
+    <div class="field" style="flex:0 1 170px"><label for="f-data">Scadenza</label><input id="f-data" type="date"></div>
     <button class="btn" type="submit">Aggiungi</button>
     <div class="opts"><label for="f-soglia">“In scadenza” entro</label>
       <select id="f-soglia"><option value="2">2 giorni</option><option value="3" selected>3 giorni</option><option value="5">5 giorni</option><option value="7">7 giorni</option></select>
@@ -182,6 +198,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
   </form>
   <div class="note" id="status" hidden></div>
 
+  <h2 class="zona">Frigo</h2>
   <div class="cols">
     <section class="col bad" aria-labelledby="h-bad">
       <header><div><h2 id="h-bad">Scaduti</h2><div class="sub">Scaduti ieri: ancora ok · prima: da buttare</div></div><span class="count" id="c-bad">0</span></header>
@@ -197,6 +214,14 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     </section>
   </div>
 
+  <h2 class="zona">Congelatore</h2>
+  <section class="col" style="--c: var(--accent)" aria-labelledby="h-cong">
+    <header><div><h2 id="h-cong">Congelatore</h2><div class="sub">Con scadenza o senza: senza, non entra nelle scadenze</div></div><span class="count" id="c-cong">0</span></header>
+    <ul id="l-cong"></ul>
+  </section>
+  </div>
+
+  <div class="panel" id="pan-spesa" hidden>
   <section class="spesa" aria-labelledby="h-spesa">
     <header><div><h2 id="h-spesa">Lista della spesa</h2><div class="sub">Prodotti finiti o con l'ultimo pezzo in scadenza</div></div><span class="count" id="c-spesa">0</span></header>
     <form class="sadd" id="sadd" autocomplete="off">
@@ -213,6 +238,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     <div class="scan" id="copia-msg" hidden role="status"></div>
     <textarea id="copia-ta" readonly hidden aria-label="Testo della lista da copiare"></textarea>
   </section>
+  </div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
 
@@ -304,7 +330,8 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     if (n === -1) { const b = document.createElement('span'); b.className = 'badge ok'; b.textContent = 'Ancora consumabile'; b.style.marginLeft = '6px'; name.appendChild(b); }
     if (n < -1) { const b = document.createElement('span'); b.className = 'badge trash'; b.textContent = 'Da buttare'; b.style.marginLeft = '6px'; name.appendChild(b); }
     const meta = document.createElement('div'); meta.className = 'meta';
-    const w = document.createElement('span'); w.className = 'when'; w.textContent = whenText(n);
+    const conData = /^\d{4}-\d{2}-\d{2}$/.test(it.scadenza || '');
+    const w = document.createElement('span'); w.className = 'when'; w.textContent = conData ? whenText(n) : 'Senza scadenza';
     const d = document.createElement('span'); d.className = 'd'; d.textContent = fmtDate(it.scadenza);
     meta.append(w, d);
     if (it.tipo) { const t = document.createElement('span'); t.textContent = it.tipo; meta.appendChild(t); }
@@ -327,6 +354,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     const ul = $('l-spesa'); ul.replaceChildren();
     const list = spesa.filter(s => !s.nascosto).sort((a, b) => ((a.preso ? 1 : 0) - (b.preso ? 1 : 0)) || String(a.aggiunto || '').localeCompare(String(b.aggiunto || '')));
     $('c-spesa').textContent = list.filter(s => !s.preso).length;
+    $('tab-n').textContent = list.filter(s => !s.preso).length;
     if (!list.length) {
       const e = document.createElement('li'); e.className = 'empty';
       e.textContent = 'Niente da comprare per ora. I prodotti che finiscono compaiono qui.'; ul.appendChild(e);
@@ -356,7 +384,9 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
 
   function render() {
     renderHeader();
-    const valid = items.filter(i => /^\d{4}-\d{2}-\d{2}$/.test(i.scadenza || ''));
+    const frigo = items.filter(i => (i.posto || 'frigo') === 'frigo');
+    const valid = frigo.filter(i => /^\d{4}-\d{2}-\d{2}$/.test(i.scadenza || ''));
+    const cong = items.filter(i => i.posto === 'congelatore').sort((a, b) => (a.scadenza ? 0 : 1) - (b.scadenza ? 0 : 1) || String(a.scadenza || '').localeCompare(String(b.scadenza || '')) || String(a.nome).localeCompare(String(b.nome)));
     const sorted = valid.slice().sort((a, b) => a.scadenza.localeCompare(b.scadenza));
     const bad = sorted.filter(i => daysLeft(i.scadenza) < 0); // i più vecchi in alto
     const warn = sorted.filter(i => { const n = daysLeft(i.scadenza); return n >= 0 && n <= soglia; });
@@ -367,6 +397,8 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     fillList($('l-bad'), bad, wait || 'Nessun alimento scaduto.');
     fillList($('l-warn'), warn, wait || 'Niente in scadenza nei prossimi ' + soglia + ' giorni.');
     fillList($('l-good'), good, wait || (valid.length ? 'Nessun alimento oltre la soglia.' : 'Aggiungi il primo alimento con il modulo qui sopra.'));
+    $('c-cong').textContent = cong.length;
+    fillList($('l-cong'), cong, wait || 'Nessun prodotto in congelatore. Aggiungine uno con Dove = Congelatore.');
     const sum = $('summary'); sum.replaceChildren();
     [['bad', bad.length, 'scaduti'], ['warn', warn.length, 'in scadenza'], ['good', good.length, 'validi']].forEach(([c, n, t]) => {
       const s = document.createElement('span'); s.className = 'chip ' + c; s.textContent = n + ' ' + t; sum.appendChild(s);
@@ -443,6 +475,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     const out = new Map();
     items.forEach(it => {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(it.scadenza || '')) return;
+      if ((it.posto || 'frigo') !== 'frigo') return; // il congelatore non genera voci automatiche
       const q = qtyOf(it);
       if (!q || !(q.n > 0 && q.n <= 1) || !isPiece(q.u)) return; // solo se resta un pezzo
       const g = daysLeft(it.scadenza);
@@ -539,18 +572,30 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
   { const d = new Date(Date.now() + 4 * DAY); $('f-data').value = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
   $('add').addEventListener('submit', ev => {
     ev.preventDefault();
-    const nome = $('f-nome').value.trim(), scadenza = $('f-data').value;
+    const nome = $('f-nome').value.trim(), scadenza = $('f-data').value, posto = $('f-posto').value;
     let n = parseFloat(String($('f-qta').value).replace(',', '.'));
     if (!isFinite(n) || n <= 0) n = 1;
     const unita = $('f-unita').value;
-    if (!nome || !scadenza) return;
-    addItem({ nome, n, unita, scadenza, tipo: pendingTipo, creato: new Date().toISOString() });
+    if (!nome) return;
+    if (posto === 'frigo' && !scadenza) { status('Per il frigo serve la data di scadenza. Nel congelatore può restare vuota.'); $('f-data').focus(); return; }
+    addItem({ nome, n, unita, scadenza, posto, tipo: pendingTipo, creato: new Date().toISOString() });
     // Se era in lista della spesa, adesso è stato comprato: lo tolgo
     const m = spesa.find(s => !s.nascosto && norm(s.nome) === norm(nome));
     if (m) { removeSpesa(m.id); toast('«' + m.nome + '» tolto dalla lista della spesa.'); }
     pendingTipo = ''; $('scan').hidden = true;
     $('f-nome').value = ''; $('f-qta').value = '1'; $('f-nome').focus();
   });
+  // Nel congelatore la scadenza è facoltativa: svuoto la data; nel frigo la rimetto di default
+  $('f-posto').addEventListener('change', e => {
+    if (e.target.value === 'congelatore') $('f-data').value = '';
+    else if (!$('f-data').value) { const d = new Date(Date.now() + 4 * DAY); $('f-data').value = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+  });
+  // Schede: Dispensa / Lista della spesa
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); });
+    $('pan-dispensa').hidden = b.dataset.tab !== 'dispensa';
+    $('pan-spesa').hidden = b.dataset.tab !== 'spesa';
+  }));
   $('f-soglia').addEventListener('change', e => {
     soglia = parseInt(e.target.value, 10);
     try { localStorage.setItem('soglia', String(soglia)); } catch (er) {}
