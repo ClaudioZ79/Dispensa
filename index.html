@@ -105,22 +105,76 @@ li.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10
 .badge.ok { background: var(--warn-bg); color: var(--warn); }
 .badge.trash { background: var(--bad-bg); color: var(--bad); }
 
-/* Lista della spesa */
-.spesa { background: var(--panel); border: 1px solid var(--line); border-top: 5px solid var(--accent); border-radius: 10px; overflow: hidden; --c: var(--accent); }
-.spesa header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 14px 16px 12px; }
-.sadd { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 14px; }
-.sadd input { flex: 1 1 200px; width: auto; }
-li.sitem { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--line); }
-.sitem label { flex: 1 1 140px; display: flex; align-items: center; gap: 10px; min-width: 0; cursor: pointer; }
-.sitem input[type=checkbox] { width: 22px; min-height: 0; height: 22px; flex: none; accent-color: var(--accent); }
-.sitem .nm { font-weight: 700; overflow-wrap: anywhere; }
-.sitem .qty-ctl { margin-top: 0; }
-.sitem .tp { color: var(--muted); font-size: 13px; }
-.sitem.done .nm { text-decoration: line-through; color: var(--muted); }
-.sitem .del { background: transparent; border: 1px solid var(--line); border-radius: 7px; color: var(--muted); padding: 5px 10px; font-size: 13px; cursor: pointer; }
-.sact { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
-.spesa .scan { margin: 0 16px 16px; }
-#copia-ta { display: block; margin: 0 16px 16px; width: calc(100% - 32px); min-height: 110px; }
+/* Lista della spesa: stesso aspetto e stessi pulsanti dell'app Casa.
+   Tutto vale solo dentro .lista-casa e usa i colori di Casa, così il resto della pagina non cambia. */
+.lista-casa {
+  --l-card: rgba(255,255,255,.72); --l-text: #000; --l-sec: #8e8e93; --l-accent: #007aff; --l-red: #ff3b30; --l-sep: rgba(60,60,67,.18);
+  color: var(--l-text);
+  font: 17px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lista-casa { --l-card: rgba(44,44,46,.7); --l-text: #fff; --l-sep: rgba(84,84,88,.6); } }
+:root[data-theme="dark"] .lista-casa { --l-card: rgba(44,44,46,.7); --l-text: #fff; --l-sep: rgba(84,84,88,.6); }
+.lista-casa.panel:not([hidden]) { display: block; }
+.lista-casa button { font: inherit; color: inherit; cursor: pointer; }
+.lista-casa h2 { margin: 22px 4px 8px; font: inherit; font-size: 20px; font-weight: 700; }
+.lista-casa .sec { color: var(--l-sec); font-size: 14px; margin: 0 4px 8px; }
+.lista-casa .card {
+  background: var(--l-card); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
+  border: .5px solid rgba(255,255,255,.4); border-radius: 18px; box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  padding: 4px 14px; margin-bottom: 12px;
+}
+.lista-casa .riga { display: flex; align-items: center; gap: 10px; padding: 11px 0; min-height: 44px; }
+.lista-casa .riga + .riga { border-top: .5px solid var(--l-sep); }
+.lista-casa .titolo { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.lista-casa .titolo small { display: block; color: var(--l-sec); font-size: 13px; }
+.lista-casa .check {
+  width: 26px; height: 26px; flex: none; border-radius: 50%; padding: 0;
+  border: 2px solid var(--l-accent); background: none;
+  display: grid; place-items: center; color: #fff; font-weight: 700;
+}
+.lista-casa .fatta .check { background: var(--l-accent); }
+.lista-casa .fatta .titolo { color: var(--l-sec); }
+.lista-casa .fatta .testo { text-decoration: line-through; }
+.lista-casa .modificabile { border: 0; background: none; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; cursor: text; }
+.lista-casa .tondo {
+  width: 32px; height: 32px; flex: none; border: 0; border-radius: 50%; padding: 0;
+  background: rgba(120,120,128,.16); font-size: 20px; line-height: 1;
+  display: grid; place-items: center;
+}
+.lista-casa .tondo.primo { background: var(--l-accent); color: #fff; }
+.lista-casa .tondo:disabled { opacity: .35; cursor: default; }
+.lista-casa .qta { min-width: 28px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.lista-casa .del { border: 0; background: none; color: var(--l-red); font-size: 22px; padding: 4px 8px; line-height: 1; }
+.lista-casa .link { display: block; margin: 0 4px 12px; padding: 0; border: 0; background: none; color: var(--l-accent); }
+.lista-casa .link.rosso { color: var(--l-red); }
+.lista-casa .vuoto { color: var(--l-sec); margin: 6px 0; padding: 12px 0; }
+.lista-casa .az {
+  border: 0; border-radius: 999px; padding: 7px 14px; min-height: 34px; font-size: 13px; font-weight: 500;
+  background: rgba(120,120,128,.14); color: var(--l-accent);
+}
+.lista-casa .riga.modifica { flex-wrap: wrap; gap: 8px; }
+.lista-casa .modifica input {
+  flex: 1 1 150px; min-width: 0; min-height: 0; border: 0; border-radius: 12px; padding: 10px 12px;
+  background: rgba(120,120,128,.12); font: inherit; color: inherit;
+}
+.lista-casa .primario { background: var(--l-accent); color: #fff; border: 0; border-radius: 12px; padding: 12px; font-weight: 600; }
+.lista-casa .primario.piccolo { padding: 10px 16px; }
+.lista-casa .form { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
+.lista-casa .form input, .lista-casa .form select {
+  width: 100%; min-height: 0; border: 0; border-radius: 12px; padding: 12px;
+  background: rgba(120,120,128,.12); font: inherit; color: inherit;
+}
+.lista-casa .campo { display: flex; flex-direction: column; gap: 4px; }
+.lista-casa .campo > span { font-size: 13px; color: var(--l-sec); padding-left: 4px; }
+.lista-casa .due { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Sui prodotti: due pulsanti per decidere se vanno nella lista della spesa (stessi nomi e stati di Casa) */
+.azioni-spesa { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.az { border: 0; border-radius: 999px; padding: 7px 14px; min-height: 34px; font-size: 13px; font-weight: 700; background: rgba(120,120,128,.14); color: var(--accent); cursor: pointer; }
+span.az { display: inline-flex; align-items: center; cursor: default; }
+.az.attiva { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+.az.no { color: var(--muted); }
+.az.no.attiva { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 32px); display: flex; align-items: center; gap: 12px; background: var(--ink); color: var(--panel); padding: 10px 14px; border-radius: 10px; font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.25); z-index: 10; }
 .toast button { background: transparent; border: 1.5px solid currentColor; color: inherit; border-radius: 7px; padding: 4px 10px; font-weight: 700; cursor: pointer; }
 @media (prefers-reduced-motion: no-preference) { li.item { transition: background .15s; } li.item:hover { background: var(--bg); } }
@@ -141,7 +195,7 @@ li.sitem { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; paddi
 :root[data-theme="dark"] {
   --glass: rgba(27,35,37,.55); --glass-edge: rgba(255,255,255,.14); --glass-bg: linear-gradient(160deg, #0d2a30 0%, #121819 45%, #2a1d17 100%); }
 body { background: var(--glass-bg) fixed; min-height: 100vh; }
-.col, .spesa, form.add {
+.col, form.add {
   background: var(--glass) !important;
   -webkit-backdrop-filter: blur(18px) saturate(180%);
   backdrop-filter: blur(18px) saturate(180%);
@@ -221,23 +275,22 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
   </section>
   </div>
 
-  <div class="panel" id="pan-spesa" hidden>
-  <section class="spesa" aria-labelledby="h-spesa">
-    <header><div><h2 id="h-spesa">Lista della spesa</h2><div class="sub">Prodotti finiti o con l'ultimo pezzo in scadenza</div></div><span class="count" id="c-spesa">0</span></header>
-    <form class="sadd" id="sadd" autocomplete="off">
-      <input id="s-nome" maxlength="80" placeholder="Aggiungi a mano, es. Pane" aria-label="Prodotto da comprare">
-      <input id="s-qta" type="number" inputmode="decimal" min="0" step="any" value="1" aria-label="Quantità" style="flex:0 1 80px;width:auto">
-      <select id="s-unita" aria-label="Unità" style="flex:0 1 80px;width:auto"><option>pz</option><option>g</option><option>kg</option><option>ml</option><option>L</option></select>
-      <button class="btn ghost" type="submit">Aggiungi</button>
+  <div class="panel lista-casa" id="pan-spesa" hidden>
+    <div id="s-lista"></div>
+
+    <h2 style="margin-top:0">Aggiungi alla lista</h2>
+    <form class="card form" id="s-form" autocomplete="off">
+      <label class="campo"><span>Cosa devi comprare</span>
+        <input id="s-nome" list="s-suggerimenti" maxlength="80" placeholder="Es. Latte" required></label>
+      <datalist id="s-suggerimenti"></datalist>
+      <div class="due">
+        <label class="campo"><span>Quanti</span>
+          <input id="s-qta" type="number" inputmode="decimal" min="0" step="any" value="1"></label>
+        <label class="campo"><span>Unità</span>
+          <select id="s-unita"><option>pz</option><option>g</option><option>kg</option><option>ml</option><option>L</option></select></label>
+      </div>
+      <button class="primario" type="submit">Aggiungi alla lista</button>
     </form>
-    <ul id="l-spesa"></ul>
-    <div class="sact">
-      <button class="btn" type="button" id="b-copia">Copia per Note</button>
-      <button class="btn ghost" type="button" id="b-svuota">Togli i già presi</button>
-    </div>
-    <div class="scan" id="copia-msg" hidden role="status"></div>
-    <textarea id="copia-ta" readonly hidden aria-label="Testo della lista da copiare"></textarea>
-  </section>
   </div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
@@ -322,7 +375,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
   function itemEl(it) {
     const n = daysLeft(it.scadenza);
     const q = qtyOf(it);
-    const li = document.createElement('li'); li.className = 'item';
+    const li = document.createElement('li'); li.className = 'item'; li.dataset.id = it.id;
     const name = document.createElement('div'); name.className = 'name';
     name.textContent = it.nome;
     if (!q && it.qta) { const t = document.createElement('span'); t.className = 'qtytxt'; t.textContent = ' · ' + it.qta; name.appendChild(t); }
@@ -341,6 +394,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     del.addEventListener('click', () => finishItem(it));
     li.append(name, del, meta);
     if (q) li.appendChild(qtyControl(it, q));
+    li.appendChild(azioniSpesa(it));
     return li;
   }
 
@@ -350,36 +404,134 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     list.forEach(it => ul.appendChild(itemEl(it)));
   }
 
-  function renderSpesa() {
-    const ul = $('l-spesa'); ul.replaceChildren();
-    const list = spesa.filter(s => !s.nascosto).sort((a, b) => ((a.preso ? 1 : 0) - (b.preso ? 1 : 0)) || String(a.aggiunto || '').localeCompare(String(b.aggiunto || '')));
-    $('c-spesa').textContent = list.filter(s => !s.preso).length;
-    $('tab-n').textContent = list.filter(s => !s.preso).length;
-    if (!list.length) {
-      const e = document.createElement('li'); e.className = 'empty';
-      e.textContent = 'Niente da comprare per ora. I prodotti che finiscono compaiono qui.'; ul.appendChild(e);
+  // ---- Lista della spesa: stessa struttura, pulsanti e aspetto dell'app Casa ----
+  const escH = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let modificaSpesaId = null;   // riga di cui stai correggendo il nome
+  let modificaSpesaTesto;       // testo scritto finora: un aggiornamento in arrivo non lo cancella
+  let spesaRimandata = false;   // il ridisegno aspetta finché scrivi nel campo del nome
+
+  function htmlRigaSpesa(s) {
+    const idA = escH(s.id);
+    if (modificaSpesaId === s.id) {
+      const v = modificaSpesaTesto !== undefined ? modificaSpesaTesto : s.nome;
+      return `<form class="riga modifica" data-id="${idA}">
+        <input name="testo" value="${escH(v)}" maxlength="80" required autocomplete="off" aria-label="Nuovo nome">
+        <button class="primario piccolo" type="submit">Salva</button>
+        <button class="link" type="button" data-az="s-annulla-nome">Annulla</button>
+      </form>`;
     }
-    list.forEach(s => {
-      const li = document.createElement('li'); li.className = 'sitem' + (s.preso ? ' done' : '');
-      const lab = document.createElement('label');
-      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!s.preso;
-      cb.addEventListener('change', () => toggleSpesa(s.id, cb.checked));
-      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = s.nome;
-      lab.append(cb, nm);
-      if (s.tipo) { const tp = document.createElement('span'); tp.className = 'tp'; tp.textContent = s.tipo; lab.appendChild(tp); }
-      const del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = 'Togli';
-      del.setAttribute('aria-label', 'Togli dalla lista: ' + s.nome);
-      del.addEventListener('click', () => removeSpesa(s.id));
-      let qc;
-      if (typeof s.n === 'number' && isFinite(s.n)) {
-        qc = qtyControl(s, { n: s.n, u: s.unita || '' }, (x, n, u) => setSpesaQty(x.id, n, u));
-      } else {
-        qc = document.createElement('button'); qc.type = 'button'; qc.className = 'del'; qc.textContent = '+ quantità';
-        qc.setAttribute('aria-label', 'Imposta la quantità di ' + s.nome);
-        qc.addEventListener('click', () => setSpesaQty(s.id, 1, s.unita || 'pz'));
-      }
-      li.append(lab, qc, del); ul.appendChild(li);
+    const haQta = typeof s.n === 'number' && isFinite(s.n);
+    const sotto = [s.unita, s.tipo].filter(Boolean).join(' · ');
+    let controllo;
+    if (s.preso) controllo = haQta ? `<span class="qta">× ${fmtN(s.n)}</span>` : '';
+    else if (haQta) controllo = `<button class="tondo" data-az="s-meno" data-id="${idA}" ${s.n - stepFor(s.unita) <= 0 ? 'disabled' : ''} aria-label="Diminuisci ${escH(s.nome)}">−</button>
+        <span class="qta">${fmtN(s.n)}</span>
+        <button class="tondo primo" data-az="s-piu" data-id="${idA}" aria-label="Aumenta ${escH(s.nome)}">+</button>`;
+    else controllo = `<button class="az" data-az="s-qta0" data-id="${idA}" aria-label="Imposta la quantità di ${escH(s.nome)}">+ quantità</button>`;
+    return `<div class="riga ${s.preso ? 'fatta' : ''}">
+      <button class="check" data-az="s-check" data-id="${idA}" aria-label="${s.preso ? 'Rimetti in lista' : 'Segna come comprato'}: ${escH(s.nome)}">${s.preso ? '✓' : ''}</button>
+      <span class="titolo"><button class="testo modificabile" data-az="s-nome" data-id="${idA}" aria-label="Correggi il nome: ${escH(s.nome)}">${escH(s.nome)}</button>${sotto ? `<small>${escH(sotto)}</small>` : ''}</span>
+      ${controllo}
+      <button class="del" data-az="s-togli" data-id="${idA}" aria-label="Togli dalla lista: ${escH(s.nome)}">×</button>
+    </div>`;
+  }
+
+  function renderSpesa(forza) {
+    const a = document.activeElement;
+    if (!forza && a && a.closest && a.closest('#s-lista form.modifica')) { spesaRimandata = true; return; }
+    spesaRimandata = false;
+    if (modificaSpesaId && !spesa.some(s => s.id === modificaSpesaId && !s.nascosto)) modificaSpesaId = null; // sparita altrove
+    const ordina = (x, y) => String(x.aggiunto || '').localeCompare(String(y.aggiunto || ''));
+    const visibili = spesa.filter(s => !s.nascosto);
+    const aperte = visibili.filter(s => !s.preso).sort(ordina);
+    const prese = visibili.filter(s => s.preso).sort(ordina);
+    const tolte = spesa.filter(s => s.nascosto && !s.preso).length;
+    $('tab-n').textContent = aperte.length;
+    $('s-lista').innerHTML = `
+      <p class="sec" style="margin-top:0">Tocca il cerchio quando un articolo è nel carrello. Qui finiscono da soli i prodotti finiti o con l'ultimo pezzo in scadenza.</p>
+      <h2 style="margin-top:8px">Da comprare</h2>
+      <div class="card">${aperte.length ? aperte.map(s => htmlRigaSpesa(s)).join('') : '<p class="vuoto">Niente da comprare. 🎉</p>'}</div>
+      ${aperte.length ? '<button class="link" data-az="s-condividi">Condividi o copia la lista</button>' : ''}
+      ${tolte ? `<button class="link" data-az="s-rimetti">Rimetti le voci tolte (${tolte})</button>` : ''}
+      ${prese.length ? `<h2>Nel carrello</h2>
+        <div class="card">${prese.map(s => htmlRigaSpesa(s)).join('')}</div>
+        <button class="link rosso" data-az="s-svuota">Svuota i comprati</button>` : ''}`;
+    $('s-suggerimenti').innerHTML = [...new Set(items.map(i => i.nome))].sort((p, q) => p.localeCompare(q, 'it')).map(n => `<option value="${escH(n)}"></option>`).join('');
+    aggiornaAzioni();
+  }
+
+  // I pulsanti sui prodotti ("In lista" o "Aggiungi alla spesa") dipendono dalla lista: ogni volta che la lista cambia li aggiorno.
+  function aggiornaAzioni() {
+    document.querySelectorAll('li.item[data-id]').forEach(li => {
+      const it = items.find(i => i.id === li.dataset.id); if (!it) return;
+      const vecchio = li.querySelector('.azioni-spesa');
+      if (vecchio) vecchio.replaceWith(azioniSpesa(it));
     });
+  }
+
+  async function rinominaSpesa(id, nuovo) {
+    const s = spesa.find(x => x.id === id); if (!s || s.nome === nuovo) return;
+    s.nome = nuovo; renderSpesa(true);
+    if (sstore) { try { await sstore.doc(id).update({ nome: nuovo }); } catch (e) { status('Non sono riuscito a cambiare il nome.'); } }
+    else saveLocalS();
+  }
+  async function rimettiTolte() {
+    const tolte = spesa.filter(s => s.nascosto && !s.preso);
+    tolte.forEach(s => { s.nascosto = false; });
+    renderSpesa(true);
+    if (sstore) { for (const s of tolte) { try { await sstore.doc(s.id).update({ nascosto: false }); } catch (e) { status('Non sono riuscito a rimettere una voce.'); } } }
+    else saveLocalS();
+  }
+  function svuotaPresi() { spesa.filter(s => s.preso && !s.nascosto).forEach(s => removeSpesa(s.id)); }
+  function condividiSpesa() {
+    const aperte = spesa.filter(s => !s.nascosto && !s.preso).sort((x, y) => String(x.aggiunto || '').localeCompare(String(y.aggiunto || '')));
+    if (!aperte.length) return;
+    const titolo = 'Lista della spesa';
+    const testo = titolo + '\n' + aperte.map(s => '- ' + s.nome + (typeof s.n === 'number' ? ' × ' + fmtN(s.n) + (s.unita ? ' ' + s.unita : '') : '')).join('\n');
+    if (navigator.share) navigator.share({ title: titolo, text: testo }).catch(() => { /* annullato */ });
+    else if (navigator.clipboard) navigator.clipboard.writeText(testo).then(() => toast('Lista copiata.')).catch(() => toast('Copia non riuscita.'));
+    else toast('Condivisione non disponibile su questo dispositivo.');
+  }
+
+  // ---- Sui prodotti: due pulsanti per decidere se vanno nella lista della spesa (come in Casa) ----
+  // "Aggiungi alla spesa" lo mette in lista adesso e il prodotto resta in dispensa.
+  // "Non aggiungere" lo esclude dalla spesa automatica e anche da "Finito"; premuto di nuovo torna automatico.
+  const inListaProdotto = it => spesa.some(s => !s.nascosto && !s.preso && norm(s.nome) === norm(it.nome));
+  async function aggiungiProdottoAllaSpesa(it) {
+    const q = qtyOf(it);
+    const u = q ? q.u : 'pz';
+    const n = !q || isPiece(u) ? 1 : q.n; // a pezzi ne compro uno; a peso o volume la stessa quantità
+    const id = await addSpesa(it.nome, { tipo: it.tipo, unita: u, n });
+    toast(id ? '«' + it.nome + '» è nella lista della spesa.' : '«' + it.nome + '» è già nella lista.');
+    render();
+  }
+  async function escludiProdotto(it) {
+    const nuovo = !it.nonInLista;
+    it.nonInLista = nuovo;
+    if (store) { try { await store.doc(it.id).update({ nonInLista: nuovo }); } catch (e) { status('Non sono riuscito a salvare la scelta.'); } }
+    else saveLocal();
+    if (nuovo) { // la voce automatica ancora da comprare di questo prodotto sparisce
+      const a = spesa.find(s => s.id === 'auto-' + it.id && !s.preso);
+      if (a) await deleteSpesaDoc(a.id);
+    }
+    render(); syncAuto();
+  }
+  function azioniSpesa(it) {
+    const box = document.createElement('div'); box.className = 'azioni-spesa';
+    if (inListaProdotto(it)) {
+      const dentro = document.createElement('span'); dentro.className = 'az attiva'; dentro.textContent = '✓ In lista della spesa';
+      box.appendChild(dentro);
+    } else {
+      const add = document.createElement('button'); add.type = 'button'; add.className = 'az'; add.textContent = '🛒 Aggiungi alla spesa';
+      add.addEventListener('click', () => aggiungiProdottoAllaSpesa(it));
+      box.appendChild(add);
+    }
+    const no = document.createElement('button'); no.type = 'button'; no.className = 'az no' + (it.nonInLista ? ' attiva' : '');
+    no.setAttribute('aria-pressed', it.nonInLista ? 'true' : 'false');
+    no.textContent = it.nonInLista ? '🚫 Non aggiungere ✓' : 'Non aggiungere';
+    no.addEventListener('click', () => escludiProdotto(it));
+    box.appendChild(no);
+    return box;
   }
 
   function render() {
@@ -458,6 +610,17 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
 
   async function addSpesa(nome, extra) {
     if (spesa.some(s => !s.nascosto && norm(s.nome) === norm(nome))) return null;
+    // Era stata tolta a mano: la rimetto invece di crearne un'altra uguale
+    const tolta = spesa.find(s => s.nascosto && !s.preso && norm(s.nome) === norm(nome));
+    if (tolta) {
+      tolta.nascosto = false;
+      const aggiorna = { nascosto: false };
+      if (extra && typeof extra.n === 'number' && isFinite(extra.n) && extra.n > 0) { tolta.n = aggiorna.n = Math.round(extra.n * 100) / 100; }
+      if (extra && extra.unita) tolta.unita = aggiorna.unita = extra.unita;
+      if (sstore) { try { await sstore.doc(tolta.id).update(aggiorna); } catch (e) { status('Non sono riuscito ad aggiungerlo alla lista della spesa.'); return null; } }
+      else { saveLocalS(); render(); }
+      return tolta.id;
+    }
     const data = { nome, tipo: (extra && extra.tipo) || '', unita: (extra && extra.unita) || '', aggiunto: new Date().toISOString(), preso: false };
     if (extra && typeof extra.n === 'number' && isFinite(extra.n) && extra.n > 0) data.n = Math.round(extra.n * 100) / 100;
     if (sstore) {
@@ -474,6 +637,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
   function wantedAuto() {
     const out = new Map();
     items.forEach(it => {
+      if (it.nonInLista) return; // escluso col pulsante "Non aggiungere"
       if (!/^\d{4}-\d{2}-\d{2}$/.test(it.scadenza || '')) return;
       if ((it.posto || 'frigo') !== 'frigo') return; // il congelatore non genera voci automatiche
       const q = qtyOf(it);
@@ -560,9 +724,10 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
       if (sstore) { try { await sstore.doc(aid).update({ auto: '' }); } catch (e) {} } else saveLocalS();
       renderSpesa();
     } else if (a) { await deleteSpesaDoc(aid); } // era nascosta: la tolgo per poterla rimettere pulita
-    const sid = await addSpesa(it.nome, { tipo: it.tipo, unita: q ? q.u : '', n: q ? q.n : undefined });
+    // Se l'hai escluso con "Non aggiungere", finisce senza entrare nella lista della spesa
+    const sid = it.nonInLista ? null : await addSpesa(it.nome, { tipo: it.tipo, unita: q ? q.u : '', n: q ? q.n : undefined });
     await removeItem(it.id);
-    toast('«' + it.nome + '» è nella lista della spesa.', async () => {
+    toast('«' + it.nome + (it.nonInLista ? '» è finito (non aggiunto alla lista della spesa).' : '» è nella lista della spesa.'), async () => {
       if (sid) await removeSpesa(sid);
       if (store) { try { await store.doc(it.id).set(copy); } catch (e) { status('Non sono riuscito a ripristinarlo.'); } }
       else { items.push(Object.assign({ id: it.id }, copy)); saveLocal(); render(); }
@@ -602,38 +767,59 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     render(); syncAuto();
   });
 
-  // Lista della spesa: aggiunta a mano, svuota presi, copia per Note
-  $('sadd').addEventListener('submit', ev => {
-    ev.preventDefault();
-    const nome = $('s-nome').value.trim();
-    if (!nome) return;
-    let n = parseFloat(String($('s-qta').value).replace(',', '.'));
-    if (!isFinite(n) || n <= 0) n = 1;
-    addSpesa(nome, { n, unita: $('s-unita').value }).then(id => { if (!id) toast('«' + nome + '» è già nella lista.'); });
-    $('s-nome').value = ''; $('s-qta').value = '1';
-  });
-  $('b-svuota').addEventListener('click', () => {
-    const presi = spesa.filter(s => s.preso);
-    if (!presi.length) { copiaMsg('Nessun prodotto spuntato da togliere.'); return; }
-    presi.forEach(s => removeSpesa(s.id));
-    copiaMsg('');
-  });
-  function copiaMsg(m) { const b = $('copia-msg'); b.textContent = m || ''; b.hidden = !m; if (!m) $('copia-ta').hidden = true; }
-  $('b-copia').addEventListener('click', async () => {
-    const todo = spesa.filter(s => !s.preso && !s.nascosto).sort((a, b) => String(a.aggiunto || '').localeCompare(String(b.aggiunto || '')));
-    if (!todo.length) { copiaMsg('La lista è vuota: non c\'è niente da copiare.'); return; }
-    const titolo = 'Spesa ' + new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
-    const text = [titolo].concat(todo.map(s => s.nome + (typeof s.n === 'number' ? ' (' + fmtN(s.n) + (s.unita ? ' ' + s.unita : '') + ')' : ''))).join('\n');
-    const ta = $('copia-ta'); ta.value = text;
-    const come = ' In Note: nuova nota, incolla, seleziona le righe sotto il titolo e tocca l\'icona dell\'elenco di controllo (le caselle da spuntare).';
-    try {
-      await navigator.clipboard.writeText(text);
-      ta.hidden = true;
-      copiaMsg('Lista copiata (' + todo.length + ' prodotti).' + come);
-    } catch (e) {
-      ta.hidden = false; ta.focus(); ta.select();
-      copiaMsg('Non riesco a copiare da solo: copia il testo qui sotto.' + come);
+  // Lista della spesa: pulsanti e moduli. La lista si ridisegna, quindi gli eventi stanno sul contenitore.
+  $('pan-spesa').addEventListener('click', e => {
+    const b = e.target.closest('[data-az]'); if (!b) return;
+    const s = b.dataset.id ? spesa.find(x => x.id === b.dataset.id) : null;
+    const haN = s && typeof s.n === 'number' && isFinite(s.n);
+    switch (b.dataset.az) {
+      case 's-check': if (s) toggleSpesa(s.id, !s.preso); break;
+      case 's-meno': if (haN) setSpesaQty(s.id, s.n - stepFor(s.unita), s.unita || ''); break;
+      case 's-piu': if (haN) setSpesaQty(s.id, s.n + stepFor(s.unita), s.unita || ''); break;
+      case 's-qta0': if (s) setSpesaQty(s.id, 1, s.unita || 'pz'); break;
+      case 's-togli': if (s) removeSpesa(s.id); break;
+      case 's-nome':
+        if (!s) break;
+        modificaSpesaId = s.id; modificaSpesaTesto = undefined; renderSpesa(true);
+        { const c = document.querySelector('#s-lista form.modifica input'); if (c) { c.focus(); c.setSelectionRange(c.value.length, c.value.length); } }
+        break;
+      case 's-annulla-nome': modificaSpesaId = null; renderSpesa(true); break;
+      case 's-rimetti': rimettiTolte(); break;
+      case 's-svuota': svuotaPresi(); break;
+      case 's-condividi': condividiSpesa(); break;
+      default: break;
     }
+  });
+  $('pan-spesa').addEventListener('submit', e => {
+    const f = e.target;
+    e.preventDefault();
+    if (f.id === 's-form') {
+      const nome = $('s-nome').value.trim();
+      if (!nome) return;
+      let n = parseFloat(String($('s-qta').value).replace(',', '.'));
+      if (!isFinite(n) || n <= 0) n = 1;
+      addSpesa(nome, { n, unita: $('s-unita').value }).then(id => { if (!id) toast('«' + nome + '» è già nella lista.'); });
+      $('s-nome').value = ''; $('s-qta').value = '1';
+    } else if (f.classList.contains('modifica')) {
+      const nuovo = String(f.elements.testo.value || '').replace(/\s+/g, ' ').trim();
+      if (!nuovo) return; // il campo resta aperto
+      modificaSpesaId = null;
+      rinominaSpesa(f.dataset.id, nuovo);
+      renderSpesa(true);
+    }
+  });
+  // Mentre correggi un nome il testo si ricorda; se lasci il campo, il ridisegno rimandato parte.
+  $('pan-spesa').addEventListener('input', e => {
+    if (e.target.closest && e.target.closest('form.modifica')) modificaSpesaTesto = e.target.value;
+  });
+  $('pan-spesa').addEventListener('focusout', () => {
+    setTimeout(() => {
+      const a = document.activeElement;
+      if (spesaRimandata && !(a && a.closest && a.closest('#s-lista form.modifica'))) renderSpesa();
+    }, 150);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modificaSpesaId) { modificaSpesaId = null; renderSpesa(true); }
   });
 
   // Foto del prodotto: Claude legge nome, tipo e data di scadenza
