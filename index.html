@@ -204,6 +204,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
 }
 .toast { -webkit-backdrop-filter: blur(18px) saturate(180%); backdrop-filter: blur(18px) saturate(180%); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 8px 24px rgba(0,0,0,.25); }
 .btn, .toast button { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .cerca { width: 100%; box-sizing: border-box; margin: 14px 0 0; font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
 </style>
 
 <div id="accesso" hidden>
@@ -251,6 +252,8 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     </div>
   </form>
   <div class="note" id="status" hidden></div>
+
+  <input class="cerca" id="cerca" type="search" placeholder="Cerca un alimento" aria-label="Cerca tra gli alimenti" maxlength="80">
 
   <h2 class="zona">Frigo</h2>
   <div class="cols">
@@ -482,7 +485,28 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     if (sstore) { for (const s of tolte) { try { await sstore.doc(s.id).update({ nascosto: false }); } catch (e) { status('Non sono riuscito a rimettere una voce.'); } } }
     else saveLocalS();
   }
-  function svuotaPresi() { spesa.filter(s => s.preso && !s.nascosto).forEach(s => removeSpesa(s.id)); }
+  // Toglie voci dalla lista e mostra "Annulla": rimette le copie (le automatiche tornano visibili, le altre si ricreano).
+  function togliConAnnulla(voci) {
+    if (!voci.length) return;
+    const copie = voci.map(s => Object.assign({}, s));
+    voci.forEach(s => removeSpesa(s.id));
+    toast(copie.length === 1 ? '«' + copie[0].nome + '» tolto dalla lista.' : copie.length + ' voci tolte dalla lista.', async () => {
+      for (const c of copie) {
+        const auto = String(c.id).startsWith('auto-');
+        const { id, ...resto } = c;
+        if (sstore) {
+          try { if (auto) await sstore.doc(id).update({ nascosto: false }); else await sstore.doc(id).set(resto); }
+          catch (e) { status('Non sono riuscito a rimettere una voce.'); }
+        } else {
+          const e = spesa.find(x => x.id === id);
+          if (e) e.nascosto = false; else spesa.push(c);
+        }
+      }
+      if (!sstore) saveLocalS();
+      renderSpesa(true);
+    });
+  }
+  function svuotaPresi() { togliConAnnulla(spesa.filter(s => s.preso && !s.nascosto)); }
   function condividiSpesa() {
     const aperte = spesa.filter(s => !s.nascosto && !s.preso).sort((x, y) => String(x.aggiunto || '').localeCompare(String(y.aggiunto || '')));
     if (!aperte.length) return;
@@ -536,9 +560,11 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
 
   function render() {
     renderHeader();
-    const frigo = items.filter(i => (i.posto || 'frigo') === 'frigo');
+    const q = $('cerca').value.trim().toLowerCase();
+    const visibili = q ? items.filter(i => (i.nome + ' ' + (i.tipo || '')).toLowerCase().includes(q)) : items;
+    const frigo = visibili.filter(i => (i.posto || 'frigo') === 'frigo');
     const valid = frigo.filter(i => /^\d{4}-\d{2}-\d{2}$/.test(i.scadenza || ''));
-    const cong = items.filter(i => i.posto === 'congelatore').sort((a, b) => (a.scadenza ? 0 : 1) - (b.scadenza ? 0 : 1) || String(a.scadenza || '').localeCompare(String(b.scadenza || '')) || String(a.nome).localeCompare(String(b.nome)));
+    const cong = visibili.filter(i => i.posto === 'congelatore').sort((a, b) => (a.scadenza ? 0 : 1) - (b.scadenza ? 0 : 1) || String(a.scadenza || '').localeCompare(String(b.scadenza || '')) || String(a.nome).localeCompare(String(b.nome)));
     const sorted = valid.slice().sort((a, b) => a.scadenza.localeCompare(b.scadenza));
     const bad = sorted.filter(i => daysLeft(i.scadenza) < 0); // i più vecchi in alto
     const warn = sorted.filter(i => { const n = daysLeft(i.scadenza); return n >= 0 && n <= soglia; });
@@ -558,6 +584,8 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     renderSpesa();
     if (!store) syncAuto();
   }
+
+  $('cerca').addEventListener('input', render);
 
   function status(msg) { const s = $('status'); s.textContent = msg || ''; s.hidden = !msg; }
   let toastTimer;
@@ -777,7 +805,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
       case 's-meno': if (haN) setSpesaQty(s.id, s.n - stepFor(s.unita), s.unita || ''); break;
       case 's-piu': if (haN) setSpesaQty(s.id, s.n + stepFor(s.unita), s.unita || ''); break;
       case 's-qta0': if (s) setSpesaQty(s.id, 1, s.unita || 'pz'); break;
-      case 's-togli': if (s) removeSpesa(s.id); break;
+      case 's-togli': if (s) togliConAnnulla([s]); break;
       case 's-nome':
         if (!s) break;
         modificaSpesaId = s.id; modificaSpesaTesto = undefined; renderSpesa(true);
