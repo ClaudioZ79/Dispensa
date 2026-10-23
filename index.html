@@ -874,20 +874,27 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     // Dentro Claude usa il database di Claude; fuori usa Firebase (se configurato); altrimenti salva solo nel browser
     let db = window.claude && window.claude.use ? await window.claude.use('db') : null;
     // Collega le liste del database e le ascolta in tempo reale
+    let spegniDati = [];
+    // Le regole del database lasciano entrare solo le persone autorizzate: un altro account viene rifiutato qui.
+    function erroreDati(err) {
+      if (err && err.code === 'permission-denied' && negato) { negato(); return; }
+      status('Connessione persa. Ricarica la pagina per vedere gli aggiornamenti.');
+    }
+    let negato = null;
     function avviaDati(db) {
       store = db.collection('cibi');
       sstore = db.collection('spesa');
-      store.onSnapshot(snap => {
+      spegniDati.push(store.onSnapshot(snap => {
         items = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
         loaded = true; status('');
         if (!snap.metadata.fromCache) itemsReady = true;
         render(); syncAuto();
-      }, () => { status('Connessione persa. Ricarica la pagina per vedere gli aggiornamenti.'); });
-      sstore.onSnapshot(snap => {
+      }, erroreDati));
+      spegniDati.push(sstore.onSnapshot(snap => {
         spesa = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
         if (!snap.metadata.fromCache) spesaReady = true;
         renderSpesa(); syncAuto();
-      }, () => { status('Connessione persa. Ricarica la pagina per vedere gli aggiornamenti.'); });
+      }, erroreDati));
     }
     // Schermata di accesso: visibile finché non entra una persona autorizzata
     function mostraAccesso(msg) {
@@ -908,10 +915,11 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
         $('btn-esci').addEventListener('click', () => auth.signOut());
         auth.onAuthStateChanged(user => {
           if (!user) { mostraAccesso(''); return; }
-          if (!(window.EMAIL_AUTORIZZATE || []).includes(user.email)) {
+          negato = () => {
+            spegniDati.forEach(f => f()); spegniDati = []; store = sstore = null; negato = null;
             mostraAccesso('Questo account non è autorizzato. Accedi con quello della dispensa.');
-            auth.signOut(); return;
-          }
+            auth.signOut();
+          };
           nascondiAccesso(user.email);
           if (!store) avviaDati(firebase.firestore());
         });

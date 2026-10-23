@@ -1,13 +1,13 @@
 rules_version = '2';
 
 // Database riservato alle persone autorizzate: si accede solo con account Google
-// le cui email sono nell'elenco qui sotto.
+// le cui email sono nell'elenco qui sotto (nel repo pubblico sono segnaposto).
 service cloud.firestore {
   match /databases/{database}/documents {
     function autorizzato() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email in ['utente1@example.com', 'utente2@example.com'];
+        && request.auth.token.email in ['EMAIL_1', 'EMAIL_2'];  // segnaposto: sostituire con le email autorizzate prima del deploy
     }
     match /cibi/{id} {
       allow read, delete: if autorizzato();

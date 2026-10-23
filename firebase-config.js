@@ -9,5 +9,3 @@ window.FIREBASE_CONFIG = {
   appId: "1:187334497556:web:26e56d2c26cae6e43e1e01"
 };
 
-// Persone autorizzate a vedere e modificare la dispensa (accesso con Google).
-window.EMAIL_AUTORIZZATE = ["utente1@example.com", "utente2@example.com"];
