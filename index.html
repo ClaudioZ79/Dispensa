@@ -909,6 +909,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     if (!db && window.FIREBASE_CONFIG && window.firebase) {
       try {
         if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(() => {}); // cache sul dispositivo: l'app si apre anche senza rete
         const auth = firebase.auth();
         const provider = new firebase.auth.GoogleAuthProvider();
         $('btn-accedi').addEventListener('click', () => auth.signInWithPopup(provider).catch(e => { $('accesso-msg').textContent = 'Accesso non riuscito: ' + e.message; }));
@@ -934,4 +935,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     avviaDati(db);
   })();
 })();
+</script>
+<script>
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 </script>
