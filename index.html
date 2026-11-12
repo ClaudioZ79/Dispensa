@@ -60,6 +60,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-body); fon
 /* Form aggiunta */
 form.add { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
 .field { display: grid; gap: 4px; min-width: 0; }
+.field[hidden] { display: none; }
 .field.grow { flex: 1 1 200px; }
 .field label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
 input, select, textarea, button { font: inherit; color: var(--ink); }
@@ -245,7 +246,7 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     <div class="field" style="flex:0 1 90px"><label for="f-qta">Quantità</label><input id="f-qta" type="number" inputmode="decimal" min="0" step="any" value="1"></div>
     <div class="field" style="flex:0 1 90px"><label for="f-unita">Unità</label><select id="f-unita"><option>pz</option><option>g</option><option>kg</option><option>ml</option><option>L</option></select></div>
     <div class="field" style="flex:0 1 150px"><label for="f-posto">Dove</label><select id="f-posto"><option value="frigo">Frigo</option><option value="congelatore">Congelatore</option></select></div>
-    <div class="field" style="flex:0 1 170px"><label for="f-data">Scadenza</label><input id="f-data" type="date"></div>
+    <div class="field" id="f-data-box" style="flex:0 1 170px"><label for="f-data">Scadenza</label><input id="f-data" type="date"></div>
     <button class="btn" type="submit">Aggiungi</button>
     <div class="opts"><label for="f-soglia">“In scadenza” entro</label>
       <select id="f-soglia"><option value="2">2 giorni</option><option value="3" selected>3 giorni</option><option value="5">5 giorni</option><option value="7">7 giorni</option></select>
@@ -765,7 +766,8 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
   { const d = new Date(Date.now() + 4 * DAY); $('f-data').value = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
   $('add').addEventListener('submit', ev => {
     ev.preventDefault();
-    const nome = $('f-nome').value.trim(), scadenza = $('f-data').value, posto = $('f-posto').value;
+    const posto = $('f-posto').value, nome = $('f-nome').value.trim();
+    const scadenza = posto === 'congelatore' ? '' : $('f-data').value; // nel congelatore niente scadenza
     let n = parseFloat(String($('f-qta').value).replace(',', '.'));
     if (!isFinite(n) || n <= 0) n = 1;
     const unita = $('f-unita').value;
@@ -778,11 +780,15 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
     pendingTipo = ''; $('scan').hidden = true;
     $('f-nome').value = ''; $('f-qta').value = '1'; $('f-nome').focus();
   });
-  // Nel congelatore la scadenza è facoltativa: svuoto la data; nel frigo la rimetto di default
-  $('f-posto').addEventListener('change', e => {
-    if (e.target.value === 'congelatore') $('f-data').value = '';
+  // Nel congelatore la scadenza non serve: il campo sparisce e la data si svuota; nel frigo ricompare con la data di default
+  function aggiornaCampoData() {
+    const cong = $('f-posto').value === 'congelatore';
+    $('f-data-box').hidden = cong;
+    if (cong) $('f-data').value = '';
     else if (!$('f-data').value) { const d = new Date(Date.now() + 4 * DAY); $('f-data').value = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
-  });
+  }
+  $('f-posto').addEventListener('change', aggiornaCampoData);
+  aggiornaCampoData();
   // Schede: Dispensa / Lista della spesa
   document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); });
@@ -875,6 +881,11 @@ body { background: var(--glass-bg) fixed; min-height: 100vh; }
         const okData = r && typeof r.scadenza === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.scadenza) && !isNaN(parseISO(r.scadenza));
         if (nome) $('f-nome').value = nome;
         pendingTipo = tipo;
+        if ($('f-posto').value === 'congelatore') { // nel congelatore la data non serve: la ignoro
+          if (nome) say('Ho riconosciuto: ' + nome + (tipo ? ' (' + tipo + ')' : '') + '. Nel congelatore non serve la scadenza: controlla e premi Aggiungi.');
+          else say('Non sono riuscito a leggere il prodotto. Prova con più luce o più vicino, oppure compila a mano.');
+          return;
+        }
         if (okData) $('f-data').value = r.scadenza;
         if (!nome && !okData) say('Non sono riuscito a leggere il prodotto. Prova con più luce o più vicino, oppure compila a mano.');
         else if (!okData) { say('Ho riconosciuto: ' + nome + (tipo ? ' (' + tipo + ')' : '') + '. La data non si legge: scrivila tu e premi Aggiungi.'); $('f-data').focus(); }
